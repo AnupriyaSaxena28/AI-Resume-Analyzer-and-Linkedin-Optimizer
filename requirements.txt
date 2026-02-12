@@ -1,0 +1,11 @@
+streamlit
+spacy
+PyPDF2
+python-docx
+plotly
+scikit-learn
+language-tool-python
+wordcloud
+pandas
+numpy
+Pillow

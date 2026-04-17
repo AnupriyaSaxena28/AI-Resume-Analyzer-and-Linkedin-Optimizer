@@ -207,11 +207,49 @@ def calculate_formatting_score(text, max_score=10):
     return round(min(score, max_score), 1), details
 
 
-def calculate_resume_strength(resume_text, jd_text, resume_skills, jd_skills):
+def calculate_semantic_similarity(nlp, resume_text, jd_text, max_score=30):
     """
-    Calculate total resume strength score (0-100)
+    Calculate semantic similarity score using spaCy word vectors
     
     Args:
+        nlp: spaCy medium model with word vectors
+        resume_text: Resume text
+        jd_text: Job description text
+        max_score: Maximum points for this component (default 30)
+        
+    Returns:
+        tuple: (score, details dict)
+    """
+    try:
+        # Check if nlp model has vectors
+        if not nlp.vocab.vectors.length:
+            return 0, {"error": "NLP model does not have word vectors"}
+            
+        doc_resume = nlp(resume_text)
+        doc_jd = nlp(jd_text)
+        
+        # Calculate cosine similarity
+        similarity = doc_resume.similarity(doc_jd)
+        
+        score = similarity * max_score
+        
+        details = {
+            "similarity_raw": round(similarity, 3),
+            "method": "spaCy en_core_web_md (300d vectors)"
+        }
+        
+        return round(score, 1), details
+        
+    except Exception as e:
+        return 0, {"error": str(e)}
+
+
+def calculate_resume_strength(nlp, resume_text, jd_text, resume_skills, jd_skills):
+    """
+    Calculate total resume strength score (0-100) using semantic + keyword analysis
+    
+    Args:
+        nlp: spaCy model
         resume_text: Resume text
         jd_text: Job description text
         resume_skills: List of skills from resume
@@ -221,52 +259,54 @@ def calculate_resume_strength(resume_text, jd_text, resume_skills, jd_skills):
         dict: Complete scoring breakdown
     """
     # Calculate individual components
-    keyword_score, keyword_details = calculate_keyword_density(resume_text, jd_text)
-    skill_score, skill_details = calculate_skill_alignment(resume_skills, jd_skills)
-    experience_score, experience_details = calculate_experience_relevance(resume_text, jd_text)
-    length_score, length_details = calculate_length_score(resume_text)
-    formatting_score, formatting_details = calculate_formatting_score(resume_text)
+    semantic_score, semantic_details = calculate_semantic_similarity(nlp, resume_text, jd_text)
+    skill_score, skill_details = calculate_skill_alignment(resume_skills, jd_skills, max_score=25)
+    keyword_score, keyword_details = calculate_keyword_density(resume_text, jd_text, max_score=20)
+    experience_score, experience_details = calculate_experience_relevance(resume_text, jd_text, max_score=15)
+    formatting_score, formatting_details = calculate_formatting_score(resume_text, max_score=10)
     
     # Calculate total
-    total_score = (keyword_score + skill_score + experience_score + 
-                  length_score + formatting_score)
+    total_score = (semantic_score + skill_score + keyword_score + 
+                  experience_score + formatting_score)
     
     # Generate feedback
     feedback = []
     
-    if skill_score >= 25:
+    if semantic_score >= 24:
+        feedback.append("🧠 Exceptional contextual alignment with the role!")
+    elif semantic_score >= 18:
+        feedback.append("✅ Strong semantic match between resume and job description")
+    else:
+        feedback.append("💡 Consider tailoring your resume summary to better align with the job's context")
+
+    if skill_score >= 20:
         feedback.append("✅ Excellent skill alignment!")
-    elif skill_score >= 20:
+    elif skill_score >= 15:
         feedback.append("👍 Good skill match")
     else:
         feedback.append("⚠️ Add more relevant skills from the job description")
     
-    if keyword_score >= 25:
+    if keyword_score >= 15:
         feedback.append("✅ Strong keyword optimization")
     else:
-        feedback.append("💡 Include more keywords from the job description")
-    
-    if length_details["word_count"] < 400:
-        feedback.append("📝 Add more details about your experience")
-    elif length_details["word_count"] > 800:
-        feedback.append("✂️ Consider condensing to focus on most relevant experience")
+        feedback.append("💡 Include more core keywords mentioned in the JD")
     
     if formatting_score < 7:
         feedback.append("📋 Include clear sections: Education, Experience, Skills")
     
     return {
-        "total_score": round(total_score, 0),
-        "keyword_density": keyword_score,
+        "total_score": round(min(total_score, 100), 0),
+        "semantic_similarity": semantic_score,
         "skill_alignment": skill_score,
+        "keyword_density": keyword_score,
         "experience_relevance": experience_score,
-        "length_optimization": length_score,
         "formatting_score": formatting_score,
         "feedback": feedback,
         "details": {
-            "keywords": keyword_details,
+            "semantic": semantic_details,
             "skills": skill_details,
+            "keywords": keyword_details,
             "experience": experience_details,
-            "length": length_details,
             "formatting": formatting_details
         }
     }

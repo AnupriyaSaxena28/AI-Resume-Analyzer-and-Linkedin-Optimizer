@@ -69,6 +69,10 @@ def extract_skills(text, matcher, nlp):
     Returns:
         list: List of unique extracted skills
     """
+    # Create normalized map of text
+    # This helps match "Node.js" with "NodeJS" or "C++" with "C Plus Plus" if needed
+    # For now, we use the direct phrase matcher but we could add fuzzy matching here
+    
     doc = nlp(text)
     matches = matcher(doc)
     
@@ -77,6 +81,19 @@ def extract_skills(text, matcher, nlp):
     for match_id, start, end in matches:
         skill = doc[start:end].text
         found_skills.add(skill)
+    
+    # Secondary check: Look for variations in unmatched skills
+    # e.g. "ReactJS" in text might match "React.js" in DB
+    
+    # normalize text: remove non-alphanumeric, lowercase
+    text_normalized = "".join(c for c in text.lower() if c.isalnum())
+    
+    # Get all skills from pattern matcher (we access the vocab)
+    # This is tricky without passing the full DB, but we can infer from existing matches
+    # or better, do a simple robust check on the text for common variations
+    
+    # For now, let's keep it simple: relying on the extensive spaCy phrase matcher is best
+    # The phrase matcher already handles case-insensitive matching
     
     return sorted(list(found_skills))
 
@@ -155,14 +172,14 @@ def initialize_skill_matcher():
         tuple: (nlp model, matcher, skills_db)
     """
     try:
-        # Load spaCy model
+        # Load spaCy model (medium with word vectors)
         try:
-            nlp = spacy.load("en_core_web_sm")
+            nlp = spacy.load("en_core_web_md")
         except:
             # If model not found, download it
             import subprocess
-            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
-            nlp = spacy.load("en_core_web_sm")
+            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"], check=True)
+            nlp = spacy.load("en_core_web_md")
         
         # Load skills database
         skills_db = load_skills_database()

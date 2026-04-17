@@ -287,7 +287,7 @@ def analysis_dashboard_section(resume_text, jd_text):
                 
                 # Calculate resume strength
                 resume_score = calculate_resume_strength(
-                    resume_text, jd_text, resume_skills, jd_skills
+                    nlp, resume_text, jd_text, resume_skills, jd_skills
                 )
                 progress.progress(100)
                 
@@ -387,10 +387,10 @@ def display_analysis_results():
     with col1:
         # Create bar chart
         components = {
-            'Keyword Density': resume_score['keyword_density'],
+            'Semantic Similarity': resume_score['semantic_similarity'],
             'Skill Alignment': resume_score['skill_alignment'],
+            'Keyword Density': resume_score['keyword_density'],
             'Experience Relevance': resume_score['experience_relevance'],
-            'Length Optimization': resume_score['length_optimization'],
             'Formatting': resume_score['formatting_score']
         }
         
@@ -401,10 +401,10 @@ def display_analysis_results():
                 orientation='h',
                 marker=dict(
                     color=list(components.values()),
-                    colorscale='Blues',
+                    colorscale='Viridis',
                     line=dict(width=0)
                 ),
-                text=[f"{v:.0f}" for v in components.values()],
+                text=[f"{v:.1f}" for v in components.values()],
                 textposition='auto',
             )
         ])
@@ -614,7 +614,7 @@ def linkedin_optimizer_section():
     if st.button("✨ Generate LinkedIn Content", type="primary", use_container_width=True):
         with st.spinner("🤖 Crafting your LinkedIn profile..."):
             try:
-                # Generate headline
+                # Generate headline (now returns single string)
                 headline = generate_headline(resume_text, resume_skills[:5])
                 
                 # Generate about section
@@ -648,11 +648,14 @@ def linkedin_optimizer_section():
         
         # Headline
         st.subheader("📝 Optimized Headline")
-        st.info(f"Character count: {len(content['headline'])}/120")
+        
+        headline = content['headline']
+        
+        st.info(f"Character count: {len(headline)}/220")
         
         headline_box = st.text_area(
             "LinkedIn Headline",
-            value=content['headline'],
+            value=headline,
             height=60,
             help="Copy this to your LinkedIn profile"
         )
@@ -795,7 +798,13 @@ def generate_linkedin_download():
 LINKEDIN PROFILE OPTIMIZATION
 {'='*60}
 
-HEADLINE ({len(content['headline'])} characters):
+HEADLINE OPTIONS
+----------------
+Professional: {content.get('headline_options', {}).get('Professional', content['headline'])}
+Specialist:   {content.get('headline_options', {}).get('Specialist', '-')}
+Impact:       {content.get('headline_options', {}).get('Impact', '-')}
+
+SELECTED HEADLINE ({len(content['headline'])} characters):
 {content['headline']}
 
 {'='*60}

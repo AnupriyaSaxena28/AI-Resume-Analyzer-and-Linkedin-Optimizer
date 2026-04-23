@@ -42,8 +42,9 @@ def calculate_keyword_density(resume_text, jd_text, max_score=30):
                 keyword_coverage += 1
         
         # Calculate score
+        # 70% keyword coverage is often sufficient for full keyword points
         if len(feature_names) > 0:
-            coverage_ratio = keyword_coverage / len(feature_names)
+            coverage_ratio = min(1.0, keyword_coverage / (len(feature_names) * 0.7))
         else:
             coverage_ratio = 0
             
@@ -81,7 +82,10 @@ def calculate_skill_alignment(resume_skills, jd_skills, max_score=30):
     jd_skills_lower = set(s.lower() for s in jd_skills)
     
     matched = resume_skills_lower.intersection(jd_skills_lower)
-    match_ratio = len(matched) / len(jd_skills_lower)
+    
+    # Matching ~75% of JD skills realistically points to a highly fitted candidate
+    expected_skills = max(1, len(jd_skills_lower) * 0.75)
+    match_ratio = min(1.0, len(matched) / expected_skills)
     
     score = match_ratio * max_score
     
@@ -129,7 +133,8 @@ def calculate_experience_relevance(resume_text, jd_text, max_score=20):
                            if keyword in resume_text.lower())
     
     # Award points based on keyword presence (max 12 points)
-    keyword_score = min(12, (job_keyword_count / len(job_keywords)) * 12)
+    # Covering about half of these key action verbs is great
+    keyword_score = min(12, (job_keyword_count / (len(job_keywords) * 0.5)) * 12)
     score += keyword_score
     details["job_keywords_found"] = job_keyword_count
     
@@ -194,7 +199,7 @@ def calculate_formatting_score(text, max_score=10):
         'education': r'education|degree|university|college',
         'experience': r'experience|employment|work history',
         'skills': r'skills|technical skills|competencies',
-        'contact': r'email|phone|linkedin|github'
+        'contact': r'email|phone|linkedin|github|linked in|git hub'
     }
     
     for section_name, pattern in sections.items():

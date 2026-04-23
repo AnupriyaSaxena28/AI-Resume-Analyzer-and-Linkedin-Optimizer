@@ -373,7 +373,7 @@ def calculate_ats_score(resume_text):
     
     # Check for standard sections (40 points)
     sections = {
-        'Contact': r'email|phone|linkedin',
+        'Contact': r'email|phone|linkedin|linked in|github|git hub',
         'Experience': r'experience|employment|work history',
         'Education': r'education|degree|university',
         'Skills': r'skills|technical skills'
@@ -403,13 +403,21 @@ def calculate_ats_score(resume_text):
         score += 15
         feedback.append("⚠️ May contain complex formatting")
     
-    # Check for contact information (20 points)
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
     
     has_email = re.search(email_pattern, resume_text)
     has_phone = re.search(phone_pattern, resume_text)
     
+    # If the regex didn't find the 'Contact' section title but found actual contact info, correct the feedback
+    contact_missing_msg = "❌ Add Contact section"
+    if (has_email or has_phone) and contact_missing_msg in feedback:
+        feedback.remove(contact_missing_msg)
+        sections_found += 1
+        score += 10
+        if sections_found == 4 and "✅ All standard sections present" not in feedback:
+            feedback.append("✅ All standard sections present")
+
     if has_email and has_phone:
         score += 20
         feedback.append("✅ Contact information present")

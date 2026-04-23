@@ -62,11 +62,23 @@ def clean_text(text):
     Returns:
         str: Cleaned text
     """
+    # Ensure commas are followed by a space to fix PyPDF missing spaces (e.g., "C,C++" -> "C, C++")
+    text = text.replace(',', ', ')
+    
+    # Separate PyPDF completely glued common resume words that destroy keyword boundaries
+    text = re.sub(r'(Development|Application|Architecture|Integration|Components|Persistence|Solution)(skills|for|and|to|with|by|in)\b', r'\1 \2', text, flags=re.IGNORECASE)
+    text = re.sub(r'([a-zA-Z])(\d+)', r'\1 \2', text) # Fix glued numbers like "by25"
+    text = re.sub(r'(\d+)([a-zA-Z])', r'\1 \2', text) # Fix glued numbers like "100UI"
+    
+    # Separate PDF column bleeding by adding space between lowercase and uppercase letters (e.g., "LanguagesJava" -> "Languages Java")
+    text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+    
+    # Remove special characters but keep basic punctuation and technical characters
+    # Replaced with space instead of empty string to prevent merging words (e.g. "Java|C++" -> "Java C++")
+    text = re.sub(r'[^\w\s\.\,\-\(\)\:\;\@\+\#\/\&]', ' ', text)
+    
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text)
-    
-    # Remove special characters but keep basic punctuation
-    text = re.sub(r'[^\w\s\.\,\-\(\)\:\;\@]', '', text)
     
     # Normalize line breaks
     text = text.strip()

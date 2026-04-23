@@ -773,11 +773,11 @@ RESUME STRENGTH SCORE
 Total Score: {int(resume_score['total_score'])}/100
 
 Component Breakdown:
-- Keyword Density: {resume_score['keyword_density']}/30
-- Skill Alignment: {resume_score['skill_alignment']}/30
-- Experience Relevance: {resume_score['experience_relevance']}/20
-- Length Optimization: {resume_score['length_optimization']}/10
-- Formatting: {resume_score['formatting_score']}/10
+- Semantic Similarity: {resume_score.get('semantic_similarity', 0)}/30
+- Skill Alignment: {resume_score.get('skill_alignment', 0)}/25
+- Keyword Density: {resume_score.get('keyword_density', 0)}/20
+- Experience Relevance: {resume_score.get('experience_relevance', 0)}/15
+- Formatting Check: {resume_score.get('formatting_score', 0)}/10
 
 FEEDBACK:
 {chr(10).join('- ' + f for f in resume_score['feedback'])}
